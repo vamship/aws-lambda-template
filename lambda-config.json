@@ -1,7 +1,7 @@
 {
     "arnPrefix": "arn:aws:lambda:__aws_region__:__aws_account_id__:function:",
     "lambdas": [ {
-        "functionName": "sample_helloWorldLambda",
-        "handlerName": "index.helloWorldHandler"
+        "functionName": "sample_greeting",
+        "handlerName": "index.greetingHandler"
     } ]
 }

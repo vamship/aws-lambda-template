@@ -6,6 +6,6 @@ const wrapper = new HandlerWrapper('aws_lambda_template');
 const greetingHandler = require('./handlers/greeting-handler');
 
 /**
- * Handler for creating new poll objects.
+ * Sample handler that responds with user greetings.
  */
 exports.greetingHandler = wrapper.wrap(greetingHandler, 'greeting');
