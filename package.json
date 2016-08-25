@@ -28,7 +28,7 @@
     "istanbul": "^0.4.4",
     "jshint-stylish": "^2.2.0",
     "load-grunt-tasks": "^3.5.0",
-    "mocha": "^2.5.3",
+    "mocha": "^3.0.2",
     "rewire": "^2.5.2",
     "sinon": "^1.17.4",
     "sinon-chai": "^2.8.0",
@@ -39,7 +39,7 @@
   "dependencies": {
     "ajv": "^4.2.0",
     "aws-sdk": "^2.5.0",
-    "wysknd-aws-lambda": "^0.0.2",
+    "wysknd-aws-lambda": "0.0.4",
     "wysknd-common": "0.0.4"
   },
   "repository": {
