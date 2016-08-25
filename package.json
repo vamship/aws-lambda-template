@@ -1,6 +1,6 @@
 {
   "name": "aws-lambda-template",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Template project for AWS Lambda functions",
   "main": "lib/index.js",
   "scripts": {
