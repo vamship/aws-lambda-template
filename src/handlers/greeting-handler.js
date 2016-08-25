@@ -11,7 +11,7 @@ const _greetingPrefixes = {
 };
 
 /**
- * AWS Lambda function handler that creates a new poll object.
+ * Sample AWS Lambda function handler returns greetings in two languages.
  * 
  * @param {Object} event The lambda event object
  * @param {Object} context The lambda context object
