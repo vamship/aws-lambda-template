@@ -33,7 +33,7 @@ module.exports = function(event, context, callback, ext) {
 
     const greetingPrefix = _greetingPrefixes[event.language];
     if (!greetingPrefix) {
-        error = new Error(`Language is not supported: ${event.language}`);
+        error = new Error(`[BadRequest] Language is not supported: ${event.language}`);
         logger.error(error);
         callback(error);
         return;

@@ -40,7 +40,7 @@
     "ajv": "^4.2.0",
     "aws-sdk": "^2.5.0",
     "wysknd-aws-lambda": "^0.0.2",
-    "wysknd-common": "^0.0.2"
+    "wysknd-common": "0.0.4"
   },
   "repository": {
     "type": "git",

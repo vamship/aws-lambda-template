@@ -22,6 +22,10 @@ describe('[greeting handler]', () => {
     const DEFAULT_LAST_NAME = 'Doe';
     const DEFAULT_MIDDLE_NAME = 'Samuel';
 
+    function _generateErrorRegex(property) {
+        return new RegExp(`\\[SchemaError\\] Schema validation failed. Details: \\[.*${property}.*\\]`);
+    }
+
     function _createWrapper(event, alias, config) {
         event = event || {};
         event.accountId = event.language || DEFAULT_LANGUAGE;
@@ -45,7 +49,7 @@ describe('[greeting handler]', () => {
     describe('[input validation]', () => {
 
         it('should fail execution if a valid language is not specified', () => {
-            const error = /Schema validation failed. Details: \[.*language.*\]/;
+            const error = _generateErrorRegex('language');
 
             _testValueProvider.allButString('').forEach((language) => {
                 const wrapper = new LambdaWrapper(_greetingHandler, {
@@ -56,7 +60,7 @@ describe('[greeting handler]', () => {
         });
 
         it('should fail execution if the event does not define a valid user object', () => {
-            const error = /Schema validation failed. Details: \[.*user.*\]/;
+            const error = _generateErrorRegex('user');
             _testValueProvider.allButObject().forEach((user) => {
                 const wrapper = new LambdaWrapper(_greetingHandler, {
                     language: DEFAULT_LANGUAGE,
@@ -67,7 +71,7 @@ describe('[greeting handler]', () => {
         });
 
         it('should fail execution if the user object does not define a valid firstName property', () => {
-            const error = /Schema validation failed. Details: \[.*firstName.*\]/;
+            const error = _generateErrorRegex('firstName');
             _testValueProvider.allButString('').forEach((firstName) => {
                 const wrapper = new LambdaWrapper(_greetingHandler, {
                     language: DEFAULT_LANGUAGE,
@@ -80,7 +84,7 @@ describe('[greeting handler]', () => {
         });
 
         it('should fail execution if the user object does not define a valid lastName property', () => {
-            const error = /Schema validation failed. Details: \[.*lastName.*\]/;
+            const error = _generateErrorRegex('lastName');
             _testValueProvider.allButString('').forEach((lastName) => {
                 const wrapper = new LambdaWrapper(_greetingHandler, {
                     language: DEFAULT_LANGUAGE,
@@ -94,7 +98,7 @@ describe('[greeting handler]', () => {
         });
 
         it('should fail execution if the user object defines a middleName property of the incorrect type', () => {
-            const error = /Schema validation failed. Details: \[.*middleName.*\]/;
+            const error = _generateErrorRegex('middleName');
             _testValueProvider.allButSelected('null', 'undefined', 'string').forEach((middleName) => {
                 const wrapper = new LambdaWrapper(_greetingHandler, {
                     language: DEFAULT_LANGUAGE,
@@ -110,7 +114,7 @@ describe('[greeting handler]', () => {
 
         it('should fail execution if a supported language is not specified', () => {
             [ 'foo', 'bar', 'baz' ].forEach((language) => {
-                const error = `Language is not supported: ${language}`;
+                const error = `[BadRequest] Language is not supported: ${language}`;
                 const wrapper = new LambdaWrapper(_greetingHandler, {
                     language: language,
                     user: {
