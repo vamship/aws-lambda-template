@@ -97,7 +97,7 @@ describe('[greeting handler]', () => {
 
         it('should fail execution if the user object defines a middleName property of the incorrect type', () => {
             const error = _testUtils.generateSchemaErrorPattern('middleName');
-            _testValueProvider.allButSelected('null', 'undefined', 'string').forEach((middleName) => {
+            _testValueProvider.allButSelected('undefined', 'string').forEach((middleName) => {
                 const wrapper = new LambdaWrapper(_greetingHandler, {
                     language: DEFAULT_LANGUAGE,
                     user: {
