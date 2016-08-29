@@ -34,7 +34,7 @@
     "sinon-chai": "^2.8.0",
     "time-grunt": "^1.4.0",
     "wysknd-lib": "0.0.2",
-    "wysknd-test": "^2.3.0"
+    "wysknd-test": "^2.4.1"
   },
   "dependencies": {
     "ajv": "^4.2.0",
