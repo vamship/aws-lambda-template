@@ -39,8 +39,8 @@
   "dependencies": {
     "ajv": "^4.2.0",
     "aws-sdk": "^2.5.0",
-    "wysknd-aws-lambda": "^0.1.0",
-    "wysknd-common": "0.0.4"
+    "wysknd-args": "^0.0.1",
+    "wysknd-aws-lambda": "^0.2.0"
   },
   "repository": {
     "type": "git",

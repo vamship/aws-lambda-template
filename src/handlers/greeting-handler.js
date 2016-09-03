@@ -1,9 +1,9 @@
 'use strict';
 
-const _argUtils = require('wysknd-common').argUtils;
+const _schemaHelper = require('wysknd-args').schemaHelper;
 
 const _schema = require('../schema/greeting-schema');
-const _checkSchema = _argUtils.buildSchemaChecker(_schema);
+const _checkSchema = _schemaHelper.buildSchemaChecker(_schema);
 
 const _greetingPrefixes = {
     'english': 'Hello',
