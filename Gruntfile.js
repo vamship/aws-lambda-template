@@ -5,16 +5,17 @@ const _fs = require('fs');
 const _folder = require('wysknd-lib').folder;
 const _utils = require('wysknd-lib').utils;
 const _lambdaConfig = require('./resources/lambda-config.json');
+const _awsSdk = require('aws-sdk');
 
-//NOTE: This account id must be replaced with a valid account id for the project.
+// Need to set project specific options here.
 const AWS_PROFILE = '__aws_profile__';
-const AWS_ACCOUNT_ID = '__aws_account_id_';
 const AWS_REGION = '__aws_region__';
+const PROJECT_NAME = 'sample';
 
-const AWS_STACK_NAME = 'sample-stack';
-const AWS_BUCKET = 'sample';
+const AWS_STACK_NAME = `${PROJECT_NAME}-stack`;
+const AWS_BUCKET = `${PROJECT_NAME}`;
 const CF_TEMPLATE_DIR = 'cf-templates';
-const CF_TEMPLATE_NAME = 'sample-template.json';
+const CF_TEMPLATE_NAME = `${PROJECT_NAME}-template.json`;
 
 // -------------------------------------------------------------------------------
 //  Help documentation
@@ -288,7 +289,7 @@ module.exports = function(grunt) {
             options: {
                 description: 'AWS resources for the thermal camera web portal',
                 tokens: {
-                    lambda_execute_role: 'sample.lambda_role'
+                    lambda_execute_role: `$REGION.${PROJECT_NAME}.lambda_role`
                 },
                 output: {
                     dir: DIST.getPath(),
@@ -463,35 +464,42 @@ module.exports = function(grunt) {
             }
             functionNameFilter = new RegExp(functionNameFilter);
 
-            grunt.log.writeln(`Deploying lambda functions to: [${target}]`);
-            const arnPrefix = `arn:aws:lambda:${AWS_REGION}:${AWS_ACCOUNT_ID}:function:`;
-            _lambdaConfig.lambdas.forEach((config) => {
-                if(!functionNameFilter.test(config.functionName)) {
-                    grunt.log.debug(`Skipping function: [${config.functionName}]`);
+            const iam = new AWS.IAM({
+                credentials: new AWS.SharedIniFileCredentials({
+                    profile: AWS_PROFILE
+                })
+            });
+
+            const done = this.async();
+            iam.getUser((err, data) => {
+                if(err) {
+                    grunt.log.error(`Unable to extract AWS information for profile: [${AWS_PROFILE}]`);
+                    done(fail);
                     return;
                 }
-                const arn = `${arnPrefix}${config.functionName}`;
-                const handlerName = config.handlerName;
-                const taskName = config.functionName;
+                grunt.log.writeln(`Deploying lambda functions to: [${target}]`);
+                const accountId = data.User.Arn.split(':')[4];
+                const arnPrefix = `arn:aws:lambda:${AWS_REGION}:${accountId}:function:`;
+                _lambdaConfig.lambdas.forEach((config) => {
+                    if(!functionNameFilter.test(config.functionName)) {
+                        grunt.log.debug(`Skipping function: [${config.functionName}]`);
+                        return;
+                    }
+                    const arn = `${arnPrefix}${config.functionName}`;
+                    const handlerName = config.handlerName;
+                    const taskName = config.functionName;
 
-                // Create a different task for each call, because the calls are
-                // asynchronous
-
-                //NOTE: These settings are commented out because these attributes are set
-                //via cloudformation templates.
-                // grunt.config.set(`lambda_deploy.${taskName}.options.memory`, config.memory);
-                // grunt.config.set(`lambda_deploy.${taskName}.options.timeout`, config.timeout);
-                // grunt.config.set(`lambda_deploy.${taskName}.options.subnetIds`, config.subnetIds);
-                // grunt.config.set(`lambda_deploy.${taskName}.options.securityGroupIds`, config.securityGroupIds);
-                // grunt.config.set(`lambda_deploy.${taskName}.options.handler`, handlerName);
-
-                grunt.config.set(`lambda_deploy.${taskName}.options.aliases`, target);
-                grunt.config.set(`lambda_deploy.${taskName}.options.enableVersioning`, true);
-                grunt.config.set(`lambda_deploy.${taskName}.options.region`, AWS_REGION);
-                grunt.config.set(`lambda_deploy.${taskName}.options.profile`, AWS_PROFILE);
-                grunt.config.set(`lambda_deploy.${taskName}.arn`, arn);
-                grunt.config.set(`lambda_deploy.${taskName}.package`, packageName);
-                grunt.task.run(`lambda_deploy:${taskName}`);
+                    // Create a different task for each call, because the calls are
+                    // asynchronous
+                    grunt.config.set(`lambda_deploy.${taskName}.options.aliases`, target);
+                    grunt.config.set(`lambda_deploy.${taskName}.options.enableVersioning`, true);
+                    grunt.config.set(`lambda_deploy.${taskName}.options.region`, AWS_REGION);
+                    grunt.config.set(`lambda_deploy.${taskName}.options.profile`, AWS_PROFILE);
+                    grunt.config.set(`lambda_deploy.${taskName}.arn`, arn);
+                    grunt.config.set(`lambda_deploy.${taskName}.package`, packageName);
+                    grunt.task.run(`lambda_deploy:${taskName}`);
+                });
+                done();
             });
         }
     );
