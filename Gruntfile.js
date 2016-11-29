@@ -4,11 +4,17 @@
 const _fs = require('fs');
 const _folder = require('wysknd-lib').folder;
 const _utils = require('wysknd-lib').utils;
-const _lambdaConfig = require('./lambda-config.json');
+const _lambdaConfig = require('./resources/lambda-config.json');
 
 //NOTE: This account id must be replaced with a valid account id for the project.
-const AWS_ACCOUNT_ID = '__some_account_id';
-const AWS_REGION = 'us-east-1';
+const AWS_PROFILE = '__aws_profile__';
+const AWS_ACCOUNT_ID = '__aws_account_id_';
+const AWS_REGION = '__aws_region__';
+
+const AWS_STACK_NAME = 'sample-stack';
+const AWS_BUCKET = 'sample';
+const CF_TEMPLATE_DIR = 'cf-templates';
+const CF_TEMPLATE_NAME = 'sample-template.json';
 
 // -------------------------------------------------------------------------------
 //  Help documentation
@@ -20,7 +26,7 @@ const HELP_TEXT =
 '                                                                                \n' +
 ' Supported Tasks:                                                               \n' +
 '   [default]         : Performs standard pre-checkin activities. Runs           \n' +
-'                       jsbeautifier on all source files, validates the files    \n' +
+'                       formatting on all source files, validates the files      \n' +
 '                       (linting), and then executes tests against the files.    \n' +
 '                                                                                \n' +
 '   env               : Provides information regarding the current environment.  \n' +
@@ -34,8 +40,8 @@ const HELP_TEXT =
 '                                                                                \n' +
 '   monitor:[opt1]:   : Monitors files for changes, and triggers actions based   \n' +
 '           [opt2]:     on specified options. Supported options are as follows:  \n' +
-'                         [lint]   : Executes jshint with default options against\n' +
-'                                    all source files.                           \n' +
+'                         [lint]   : Performs linting with default options       \n' +
+'                                    against all source files.                   \n' +
 '                         [unit]   : Executes unit tests against all source      \n' +
 '                                    files.                                      \n' +
 '                                                                                \n' +
@@ -44,7 +50,9 @@ const HELP_TEXT =
 '                       requires a web server to be launched, this will be done  \n' +
 '                       automatically.                                           \n' +
 '                                                                                \n' +
-'   jshint:dev        : Executes jshint against all source files.                \n' +
+'   lint              : Performs linting of all source and test files.           \n' +
+'                                                                                \n' +
+'   format            : Formats source and test files.                           \n' +
 '                                                                                \n' +
 '   test:unit         : Executes unit tests against source files.                \n' +
 '                                                                                \n' +
@@ -53,11 +61,18 @@ const HELP_TEXT =
 '                       and minor version numbers can be incremented by          \n' +
 '                       specifying the "major" or "minor" subtask.               \n' +
 '                                                                                \n' +
+'  cf:[create|update| : Allows create, update, delete or display status on a     \n' +
+'      delete|status]   cloud formation script associated with the project. Uses \n' +
+'                       wysknd-aws-cf-generator to generate cloud formation      \n' +
+'                       scripts.                                                 \n' +
+'                                                                                \n' +
 ' Supported Options:                                                             \n' +
-'   --unitTestSuite   : Can be used to specify a unit test suite to execute when \n' +
+'   --unit-test-suite : Can be used to specify a unit test suite to execute when \n' +
 '                       running tests. Useful when development is focused on a   \n' +
 '                       small section of the app, and there is no need to retest \n' +
 '                       all components when runing a watch.                      \n' +
+'   --lambda-function : A regular expression that can be used to filter out      \n' +
+'                       lambda functions when performing a deployment.           \n' +
 '                                                                                \n' +
 ' IMPORTANT: Please note that while the grunt file exposes tasks in addition to  \n' +
 ' ---------  the ones listed below (no private tasks in grunt yet :( ), it is    \n' +
@@ -79,7 +94,7 @@ module.exports = function(grunt) {
      * Build configuration parameters
      * ---------------------------------------------------------------------- */
     const packageConfig = grunt.file.readJSON('package.json') || {};
-    
+
     const ENV = {
         appName: packageConfig.name || '__UNKNOWN__',
         appVersion: packageConfig.version || '__UNKNOWN__',
@@ -90,7 +105,11 @@ module.exports = function(grunt) {
             'test': {                       /*  |--- test                     */
                 'unit': null                /*  |   |--- unit                 */
             },                              /*  |                             */
-            'working': null,                /*  |--- dist                     */
+            'resources': {                  /*  |--- resources                */
+                'cf': null,                 /*  |    | --- cf                 */
+                'data': null                /*  |    | --- data               */
+            },                              /*  |                             */
+            'working': null,                /*  |--- working                  */
             'dist': null,                   /*  |--- dist                     */
             'coverage': null                /*  |--- coverage                 */
         }                                   /* ------------------------------ */
@@ -98,7 +117,7 @@ module.exports = function(grunt) {
 
     ENV.ROOT = _folder.createFolderTree('./', ENV.tree);
 
-    // This is the root url prefix for the app, and represents the path 
+    // This is the root url prefix for the app, and represents the path
     // (relative to root), where the app will be available. This value should
     // remain unchanged for most apps, but can be tweaked here if necessary.
     ENV.appRoot = '/' + ENV.appName;
@@ -120,6 +139,7 @@ module.exports = function(grunt) {
     const TEST = ENV.ROOT.test;
     const WORKING = ENV.ROOT.working;
     const DIST = ENV.ROOT.dist;
+    const RESOURCES = ENV.ROOT.resources;
 
     /* ------------------------------------------------------------------------
      * Grunt task configuration
@@ -207,7 +227,11 @@ module.exports = function(grunt) {
          *  - Beautify all javascript, html and css files  prior to checkin.
          */
         jsbeautifier: {
-            dev: [ SRC.allFilesPattern('js') ]
+            dev: [
+                SRC.allFilesPattern('js'),
+                RESOURCES.cf.allFilesPattern('js'),
+                TEST.allFilesPattern('js')
+            ]
         },
 
         /**
@@ -228,9 +252,10 @@ module.exports = function(grunt) {
             },
             dev: [ 'Gruntfile.js',
                     SRC.allFilesPattern('js'),
+                    RESOURCES.cf.allFilesPattern('js'),
                     TEST.allFilesPattern('js') ]
         },
-        
+
         /**
          * Configuration for grunt-contrib-watch, which is used to:
          *  - Monitor all source/test files and trigger actions when these
@@ -251,6 +276,86 @@ module.exports = function(grunt) {
             options: {
                 push: false
              }
+        },
+
+        /**
+         * Configuration for grunt-contrib-wysknd-cloudformation, which is used
+         * to:
+         *  - Generate cloud formation JSON templates based on code driven
+         *    specifications.
+         */
+        generate_cf_template: {
+            options: {
+                description: 'AWS resources for the thermal camera web portal',
+                tokens: {
+                    lambda_execute_role: 'sample.lambda_role'
+                },
+                output: {
+                    dir: DIST.getPath(),
+                    fileName: CF_TEMPLATE_NAME
+                },
+                input: {
+                    rootDir: RESOURCES.getPath(),
+                    templateDir: RESOURCES.cf.getPath()
+                }
+            }
+        },
+
+        /**
+         * Configuration for grunt-aws-s3, which is used
+         * to:
+         *  - Upload resources to S3
+         */
+        aws_s3: {
+            options: {
+                awsProfile: AWS_PROFILE,
+                bucket: AWS_BUCKET,
+                region: AWS_REGION
+            },
+            uploadCf: {
+                action: 'upload',
+                expand: true,
+                cwd: DIST.getPath(),
+                dest: CF_TEMPLATE_DIR,
+                src: CF_TEMPLATE_NAME,
+                differential: true
+            },
+            uploadLambda: {
+                action: 'upload',
+                expand: true,
+                cwd: DIST.getPath(),
+                dest: CF_TEMPLATE_DIR,
+                src: CF_TEMPLATE_NAME,
+                differential: true
+            }
+        },
+
+        /**
+         * Configuration for grunt-aws-cloudformation, which is used
+         * to:
+         *  - Create and/or update stacks on cloudformation
+         */
+        cloudformation: {
+            options: {
+                stackName: AWS_STACK_NAME,
+                region: AWS_REGION,
+                profile: AWS_PROFILE,
+                capabilities: [ 'CAPABILITY_NAMED_IAM' ]
+            },
+            status: {
+                action: 'stack-status'
+            },
+            create: {
+                action: 'create-stack',
+                templateUrl: `https://s3.amazonaws.com/${AWS_BUCKET}/${CF_TEMPLATE_DIR}/${CF_TEMPLATE_NAME}`
+            },
+            update: {
+                action: 'update-stack',
+                templateUrl: `https://s3.amazonaws.com/${AWS_BUCKET}/${CF_TEMPLATE_DIR}/${CF_TEMPLATE_NAME}`
+            },
+            delete: {
+                action: 'delete-stack'
+            }
         }
     });
 
@@ -281,6 +386,26 @@ module.exports = function(grunt) {
                                  'test:unit',
                                  'lambda_package',
                                  'clean:working' ]);
+
+    /**
+     * Create, update, delete or show status of the cloud formation resource
+     * stack associated with the project.
+     */
+    grunt.registerTask('cf',
+        'Enables create, update, delete or status check on a cloud formation stack associated with the project',
+        function(target) {
+            target = target || 'update';
+            if(['update', 'create', 'delete', 'status'].indexOf(target) < 0) {
+                grunt.log.error(`Invalid target specified: [${target}]`);
+                return;
+            }
+            if(['update', 'create'].indexOf(target) >= 0) {
+                grunt.task.run('generate_cf_template');
+                grunt.task.run('aws_s3:uploadCf');
+            }
+            grunt.task.run(`cloudformation:${target}`);
+        }
+    );
 
     /**
      * Create distribution package and deploy it to AWS.
@@ -329,22 +454,41 @@ module.exports = function(grunt) {
                 packageName = grunt.config.get('lambda_deploy.default.package');
             }
 
+            let functionNameFilter = grunt.option('lambda-function');
+            if(typeof functionNameFilter !== 'string' ||
+               functionNameFilter.length < 0)  {
+                functionNameFilter = '.*';
+            } else {
+                grunt.log.writeln(`Filtering lambdas using regex pattern: [${functionNameFilter}]`);
+            }
+            functionNameFilter = new RegExp(functionNameFilter);
+
             grunt.log.writeln(`Deploying lambda functions to: [${target}]`);
-            const arnPrefix = _lambdaConfig.arnPrefix;
+            const arnPrefix = `arn:aws:lambda:${AWS_REGION}:${AWS_ACCOUNT_ID}:function:`;
             _lambdaConfig.lambdas.forEach((config) => {
+                if(!functionNameFilter.test(config.functionName)) {
+                    grunt.log.debug(`Skipping function: [${config.functionName}]`);
+                    return;
+                }
                 const arn = `${arnPrefix}${config.functionName}`;
                 const handlerName = config.handlerName;
                 const taskName = config.functionName;
 
                 // Create a different task for each call, because the calls are
                 // asynchronous
-                grunt.config.set(`lambda_deploy.${taskName}.options.memory`, config.memory);
-                grunt.config.set(`lambda_deploy.${taskName}.options.timeout`, config.timeout);
-                grunt.config.set(`lambda_deploy.${taskName}.options.subnetIds`, config.subnetIds);
-                grunt.config.set(`lambda_deploy.${taskName}.options.securityGroupIds`, config.securityGroupIds);
+
+                //NOTE: These settings are commented out because these attributes are set
+                //via cloudformation templates.
+                // grunt.config.set(`lambda_deploy.${taskName}.options.memory`, config.memory);
+                // grunt.config.set(`lambda_deploy.${taskName}.options.timeout`, config.timeout);
+                // grunt.config.set(`lambda_deploy.${taskName}.options.subnetIds`, config.subnetIds);
+                // grunt.config.set(`lambda_deploy.${taskName}.options.securityGroupIds`, config.securityGroupIds);
+                // grunt.config.set(`lambda_deploy.${taskName}.options.handler`, handlerName);
+
                 grunt.config.set(`lambda_deploy.${taskName}.options.aliases`, target);
                 grunt.config.set(`lambda_deploy.${taskName}.options.enableVersioning`, true);
-                grunt.config.set(`lambda_deploy.${taskName}.options.handler`, handlerName);
+                grunt.config.set(`lambda_deploy.${taskName}.options.region`, AWS_REGION);
+                grunt.config.set(`lambda_deploy.${taskName}.options.profile`, AWS_PROFILE);
                 grunt.config.set(`lambda_deploy.${taskName}.arn`, arn);
                 grunt.config.set(`lambda_deploy.${taskName}.package`, packageName);
                 grunt.task.run(`lambda_deploy:${taskName}`);
@@ -359,10 +503,10 @@ module.exports = function(grunt) {
         'Executes tests against sources',
         function(testType) {
             let testAction;
-            
+
             if(testType === 'unit') {
                 testAction = 'mocha_istanbul:default';
-                const unitTestSuite = grunt.option('unitTestSuite');
+                const unitTestSuite = grunt.option('unit-test-suite');
                 if(typeof unitTestSuite === 'string' && unitTestSuite.length > 0) {
                     grunt.log.writeln('Running test suite: ', unitTestSuite);
                     grunt.config.set('mocha_istanbul.default', TEST.unit.getChildPath(unitTestSuite));
@@ -452,9 +596,19 @@ module.exports = function(grunt) {
     );
 
     /**
+     * Lint task - checks source and test files for linting errors.
+     */
+    grunt.registerTask('lint', [ 'jshint:dev' ]);
+
+    /**
+     * Formatter task - formats all source and test files.
+     */
+    grunt.registerTask('format', [ 'jsbeautifier' ]);
+
+    /**
      * Shows help information on how to use the Grunt tasks.
      */
-    grunt.registerTask('help', 
+    grunt.registerTask('help',
         'Displays grunt help documentation',
         function(){
             grunt.log.writeln(HELP_TEXT);
