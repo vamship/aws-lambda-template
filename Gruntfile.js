@@ -372,8 +372,8 @@ module.exports = function(grunt) {
      *  - Testing build artifacts
      *  - Cleaning up build results
      */
-    grunt.registerTask('default', [ 'jsbeautifier:dev',
-                                    'jshint:dev',
+    grunt.registerTask('default', [ 'format',
+                                    'lint',
                                     'test:unit',
                                     'clean' ]);
 
@@ -381,8 +381,8 @@ module.exports = function(grunt) {
      * Create distribution package task. Creates a new distribution of the app,
      * ready for deployment.
      */
-    grunt.registerTask('package', ['jsbeautifier:dev',
-                                 'jshint:dev',
+    grunt.registerTask('package', ['format',
+                                 'lint',
                                  'build',
                                  'test:unit',
                                  'lambda_package',
@@ -542,7 +542,7 @@ module.exports = function(grunt) {
             // Process the arguments (specified as subtasks).
             Array.prototype.slice.call(arguments).forEach((arg, index) => {
                 if (arg === 'lint') {
-                    tasks.push('jshint:dev');
+                    tasks.push('lint');
 
                 } else if ('unit' === arg) {
                     tasks.push('test:unit');
@@ -611,7 +611,7 @@ module.exports = function(grunt) {
     /**
      * Formatter task - formats all source and test files.
      */
-    grunt.registerTask('format', [ 'jsbeautifier' ]);
+    grunt.registerTask('format', [ 'jsbeautifier:dev' ]);
 
     /**
      * Shows help information on how to use the Grunt tasks.
