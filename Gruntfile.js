@@ -297,7 +297,7 @@ module.exports = function(grunt) {
                 },
                 input: {
                     rootDir: RESOURCES.getPath(),
-                    templateDir: RESOURCES.cf.getPath()
+                    templateDir: 'cf'
                 }
             }
         },
