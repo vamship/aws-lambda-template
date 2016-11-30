@@ -13,7 +13,7 @@ module.exports = (dirInfo) => {
 
     return ['dev'].map((envName) => {
         const env = new Environment(envName);
-        const tableName = env.getSuffixString('sample.greetings');
+        const tableName = env.getSuffixString('greeter.greetings');
         const key = dirInfo.getToken(tableName);
         return (new TableTemplate(key, tableName))
             .addKey('userId', 'S', 'HASH')

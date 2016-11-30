@@ -1,7 +1,7 @@
 'use strict';
 
 const HandlerWrapper = require('wysknd-aws-lambda').HandlerWrapper;
-const wrapper = new HandlerWrapper('aws_lambda_template');
+const wrapper = new HandlerWrapper('greeter');
 
 const greetingHandler = require('./handlers/greeting-handler');
 

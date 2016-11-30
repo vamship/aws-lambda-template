@@ -1,6 +1,6 @@
 {
     "lambdas": [ {
-        "functionName": "sample_greeting",
+        "functionName": "greeter-greeting",
         "handlerName": "index.greetingHandler"
     } ]
 }

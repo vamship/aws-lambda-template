@@ -6,7 +6,7 @@ const PolicyDocument = IamTemplates.PolicyDocument;
 const PolicyStatement = IamTemplates.PolicyStatement;
 
 module.exports = (dirInfo) => {
-    const roleName = 'sample.lambda_role';
+    const roleName = 'greeter.lambda_role';
     const key = dirInfo.getRootToken(roleName);
 
     return new RoleTemplate(key, roleName)

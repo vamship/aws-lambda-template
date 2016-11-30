@@ -10,7 +10,7 @@ const _awsSdk = require('aws-sdk');
 // Need to set project specific options here.
 const AWS_PROFILE = '__aws_profile__';
 const AWS_REGION = '__aws_region__';
-const PROJECT_NAME = 'sample';
+const PROJECT_NAME = 'greeter';
 
 const AWS_STACK_NAME = `${PROJECT_NAME}-stack`;
 const AWS_BUCKET = `${PROJECT_NAME}`;

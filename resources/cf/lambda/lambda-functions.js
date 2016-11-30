@@ -7,12 +7,12 @@ const _lambdaConfig = require('../../lambda-config');
 
 module.exports = (dirInfo) => {
     return _lambdaConfig.lambdas.map((lambda) => {
-        const roleName = 'sample.lambda_role';
+        const roleName = 'greeter.lambda_role';
         const key = _camelCase(lambda.functionName);
         const roleKey = dirInfo.getRootToken(roleName);
 
         const template = new FunctionTemplate(key, lambda.functionName, lambda.handlerName)
-            .setRole('$REGION.sample.lambda_role')
+            .setRole('$REGION.greeter.lambda_role')
             .addDependency(roleKey);
 
         if (typeof lambda.description === 'string' &&
