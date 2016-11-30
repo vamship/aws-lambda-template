@@ -464,8 +464,8 @@ module.exports = function(grunt) {
             }
             functionNameFilter = new RegExp(functionNameFilter);
 
-            const iam = new AWS.IAM({
-                credentials: new AWS.SharedIniFileCredentials({
+            const iam = new _awsSdk.IAM({
+                credentials: new _awsSdk.SharedIniFileCredentials({
                     profile: AWS_PROFILE
                 })
             });
@@ -474,7 +474,7 @@ module.exports = function(grunt) {
             iam.getUser((err, data) => {
                 if(err) {
                     grunt.log.error(`Unable to extract AWS information for profile: [${AWS_PROFILE}]`);
-                    done(fail);
+                    done(false);
                     return;
                 }
                 grunt.log.writeln(`Deploying lambda functions to: [${target}]`);

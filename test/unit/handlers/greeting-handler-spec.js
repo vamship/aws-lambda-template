@@ -111,7 +111,7 @@ describe('[greeting handler]', () => {
         });
 
         it('should fail execution if a supported language is not specified', () => {
-            [ 'foo', 'bar', 'baz' ].forEach((language) => {
+            ['foo', 'bar', 'baz'].forEach((language) => {
                 const error = `[BadRequest] Language is not supported: ${language}`;
                 const wrapper = new LambdaWrapper(_greetingHandler, {
                     language: language,
@@ -145,10 +145,13 @@ describe('[greeting handler]', () => {
                 expect(wrapper.callback).to.have.been.calledWith(null, expectedGreeting);
             };
 
-            [
-                { language: 'english', greetingPrefix: 'Hello' },
-                { language: 'french', greetingPrefix: 'Bonjour' }
-            ].forEach((item) => {
+            [{
+                language: 'english',
+                greetingPrefix: 'Hello'
+            }, {
+                language: 'french',
+                greetingPrefix: 'Bonjour'
+            }].forEach((item) => {
                 doTest(item.language, item.greetingPrefix);
             });
         });
@@ -174,10 +177,13 @@ describe('[greeting handler]', () => {
                 expect(wrapper.callback).to.have.been.calledWith(null, expectedGreeting);
             };
 
-            [
-                { language: 'english', greetingPrefix: 'Hello' },
-                { language: 'french', greetingPrefix: 'Bonjour' }
-            ].forEach((item) => {
+            [{
+                language: 'english',
+                greetingPrefix: 'Hello'
+            }, {
+                language: 'french',
+                greetingPrefix: 'Bonjour'
+            }].forEach((item) => {
                 doTest(item.language, item.greetingPrefix);
             });
         });

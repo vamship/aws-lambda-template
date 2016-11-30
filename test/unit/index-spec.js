@@ -11,8 +11,8 @@ const _index = require('../../src/index');
 
 describe('_index', () => {
     describe('[handlers]', () => {
-       it('should define the expected handlers', () => {
-           expect(_index.greetingHandler).to.be.a('function');
-       }); 
+        it('should define the expected handlers', () => {
+            expect(_index.greetingHandler).to.be.a('function');
+        });
     });
 });
